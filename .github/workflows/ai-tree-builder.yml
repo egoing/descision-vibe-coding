@@ -1,0 +1,64 @@
+name: AI Tree Builder
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  process-issue:
+    runs-on: ubuntu-latest
+    if: contains(github.event.issue.labels.*.name, 'tree-suggestion') || !contains(github.event.issue.title, '[skip]')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install anthropic
+
+      - name: Process issue and generate nodes
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: python scripts/process_issue.py
+
+      - name: Validate tree
+        run: python scripts/validate_tree.py
+
+      - name: Create PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="tree/issue-${{ github.event.issue.number }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add README.md
+          git commit -m "feat: add nodes from issue #${{ github.event.issue.number }}"
+          git push origin "$BRANCH"
+          PR_URL=$(gh pr create \
+            --title "🌳 Issue #${{ github.event.issue.number }}: 트리 확장" \
+            --body "$(cat <<EOF
+          ## Issue #${{ github.event.issue.number }} 기반 트리 확장
+
+          ${{ github.event.issue.title }}
+
+          자동 생성된 PR입니다. README.md의 변경 사항을 검토해 주세요.
+
+          Closes #${{ github.event.issue.number }}
+          EOF
+          )" \
+            --base main)
+          gh issue comment "${{ github.event.issue.number }}" \
+            --body "🤖 PR이 생성되었습니다: $PR_URL"
