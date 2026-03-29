@@ -9,10 +9,14 @@ permissions:
   pull-requests: write
   issues: write
 
+concurrency:
+  group: tree-builder
+  cancel-in-progress: false
+
 jobs:
   process-issue:
     runs-on: ubuntu-latest
-    if: contains(github.event.issue.labels.*.name, 'tree-suggestion') || !contains(github.event.issue.title, '[skip]')
+    if: contains(github.event.issue.labels.*.name, 'tree-suggestion')
 
     steps:
       - name: Checkout
@@ -25,6 +29,13 @@ jobs:
 
       - name: Install dependencies
         run: pip install anthropic
+
+      - name: Check API key
+        run: |
+          if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+            echo "::error::ANTHROPIC_API_KEY secret이 설정되지 않았습니다."
+            exit 1
+          fi
 
       - name: Process issue and generate nodes
         env:
@@ -39,26 +50,26 @@ jobs:
       - name: Create PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
         run: |
-          BRANCH="tree/issue-${{ github.event.issue.number }}"
+          BRANCH="tree/issue-${ISSUE_NUMBER}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
           git add README.md
-          git commit -m "feat: add nodes from issue #${{ github.event.issue.number }}"
+          git diff --staged --quiet && echo "변경 없음, 종료" && exit 0
+          git commit -m "feat: add nodes from issue #${ISSUE_NUMBER}"
           git push origin "$BRANCH"
           PR_URL=$(gh pr create \
-            --title "🌳 Issue #${{ github.event.issue.number }}: 트리 확장" \
-            --body "$(cat <<EOF
-          ## Issue #${{ github.event.issue.number }} 기반 트리 확장
+            --title "🌳 Issue #${ISSUE_NUMBER}: 트리 확장" \
+            --body "## Issue #${ISSUE_NUMBER} 기반 트리 확장
 
-          ${{ github.event.issue.title }}
+${ISSUE_TITLE}
 
-          자동 생성된 PR입니다. README.md의 변경 사항을 검토해 주세요.
+자동 생성된 PR입니다. README.md의 변경 사항을 검토해 주세요.
 
-          Closes #${{ github.event.issue.number }}
-          EOF
-          )" \
+Closes #${ISSUE_NUMBER}" \
             --base main)
-          gh issue comment "${{ github.event.issue.number }}" \
+          gh issue comment "${ISSUE_NUMBER}" \
             --body "🤖 PR이 생성되었습니다: $PR_URL"
