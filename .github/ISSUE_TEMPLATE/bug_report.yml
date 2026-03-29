@@ -1,0 +1,31 @@
+name: 🐛 버그 신고 / 일반 피드백
+description: 프론트엔드 오류, 링크 오류, 또는 일반적인 피드백을 남깁니다
+body:
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: 문제 유형
+      options:
+        - 프론트엔드 버그 (화면 오류, 링크 동작 안 함 등)
+        - 트리 내용 오류 (잘못된 정보, 깨진 링크)
+        - 기타 피드백
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 문제 설명
+      placeholder: 어떤 문제가 발생했는지 설명해 주세요.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 방법 (버그인 경우)
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: false
