@@ -7,6 +7,8 @@ start: goal
 
 # 코딩 입문자를 위한 프로그래밍 언어 선택 트리
 
+[홈페이지](https://egoing.github.io/descision-vibe-coding/)
+
 몇 가지 질문에 답하면 당신에게 맞는 첫 번째 프로그래밍 언어를 추천해 드립니다.
 
 <a id="goal"></a>
