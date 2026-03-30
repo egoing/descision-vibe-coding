@@ -10,6 +10,15 @@
   --btn-hover-fg: #ffffff;
   --border: #e8e8ee;
   --muted: #6b7280;
+  --tree-line: #d1d5db;
+  --tree-line-active: #6c63ff;
+  --node-bg: #f9f9fb;
+  --node-active-bg: #6c63ff;
+  --node-active-fg: #ffffff;
+  --node-visited-bg: #ede9fe;
+  --node-child-bg: #f0fdf4;
+  --node-child-border: #22c55e;
+  --overlay: rgba(0, 0, 0, 0.4);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -21,6 +30,14 @@
     --btn-bg: #2a2a3e;
     --border: #2a2a3e;
     --muted: #9ca3af;
+    --tree-line: #374151;
+    --tree-line-active: #818cf8;
+    --node-bg: #1e1e30;
+    --node-active-bg: #6c63ff;
+    --node-visited-bg: #2d2b55;
+    --node-child-bg: #052e16;
+    --node-child-border: #16a34a;
+    --overlay: rgba(0, 0, 0, 0.6);
   }
 }
 
@@ -30,78 +47,224 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--bg);
   color: var(--fg);
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  height: 100vh;
+  overflow: hidden;
 }
 
 #app {
+  position: relative;
   width: 100%;
-  max-width: 600px;
-  padding: 1rem;
+  height: 100vh;
+  overflow: hidden;
 }
 
-#progress {
+/* ---- Tree Wrapper (scrollable canvas) ---- */
+#tree-wrapper {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  cursor: grab;
+}
+
+#tree-wrapper:active {
+  cursor: grabbing;
+}
+
+#tree-container {
+  position: relative;
+  min-width: 100%;
+  min-height: 100%;
+}
+
+/* ---- SVG lines ---- */
+#tree-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.tree-edge {
+  stroke: var(--tree-line);
+  stroke-width: 2;
+  fill: none;
+  transition: stroke 0.3s;
+}
+
+.tree-edge-active {
+  stroke: var(--tree-line-active);
+  stroke-width: 2.5;
+}
+
+/* ---- Tree Nodes ---- */
+#tree-nodes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.tree-node {
+  position: absolute;
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
+  background: var(--node-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 0 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: center;
+  user-select: none;
 }
 
-.progress-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--border);
-  transition: background 0.3s;
+.tree-node:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.15);
+  transform: scale(1.04);
+  z-index: 10;
 }
 
-.progress-dot.active {
-  background: var(--accent);
+.tree-node-title {
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
-#card {
+.tree-node-active {
+  background: var(--node-active-bg);
+  border-color: var(--node-active-bg);
+  color: var(--node-active-fg);
+  box-shadow: 0 4px 16px rgba(108, 99, 255, 0.4);
+  z-index: 5;
+}
+
+.tree-node-visited {
+  background: var(--node-visited-bg);
+  border-color: var(--accent);
+  opacity: 0.85;
+}
+
+.tree-node-child {
+  background: var(--node-child-bg);
+  border-color: var(--node-child-border);
+}
+
+/* ---- Center Panel (modal overlay) ---- */
+#center-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.85);
+  z-index: 100;
   background: var(--card-bg);
-  border-radius: 16px;
-  box-shadow: var(--card-shadow);
-  padding: 2.5rem 2rem;
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-#card.fade-out {
+  border-radius: 20px;
+  box-shadow: 0 8px 48px rgba(0, 0, 0, 0.18);
+  padding: 2rem;
+  width: min(540px, 90vw);
+  max-height: 80vh;
+  overflow-y: auto;
   opacity: 0;
-  transform: translateY(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: auto;
 }
 
-#card h2 {
-  font-size: 1.5rem;
+.center-panel-enter {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.85);
+}
+
+.center-panel-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.center-panel-exit {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.9);
+}
+
+.center-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.center-panel-header h2 {
+  font-size: 1.4rem;
   line-height: 1.4;
-  margin-bottom: 1.5rem;
+  flex: 1;
 }
 
-#card .body-text {
+.center-panel-close {
+  background: var(--btn-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--muted);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.center-panel-close:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* Dim overlay behind center panel */
+#app::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+#app:has(#center-panel.center-panel-visible)::after {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---- Choices (inside center panel) ---- */
+.body-text {
   line-height: 1.7;
   color: var(--muted);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.95rem;
 }
 
-#card .body-text a {
+.body-text a {
   color: var(--accent);
   text-decoration: none;
 }
 
-#card .body-text a:hover {
+.body-text a:hover {
   text-decoration: underline;
 }
 
 .choices {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .choice-btn {
@@ -109,12 +272,12 @@ body {
   align-items: center;
   gap: 0.75rem;
   width: 100%;
-  padding: 1rem 1.25rem;
+  padding: 0.875rem 1.25rem;
   background: var(--btn-bg);
   color: var(--fg);
   border: 1px solid var(--border);
   border-radius: 12px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   cursor: pointer;
   text-align: left;
   transition: all 0.2s ease;
@@ -132,12 +295,12 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
   background: var(--card-bg);
   border: 1px solid var(--border);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
   flex-shrink: 0;
 }
@@ -148,15 +311,21 @@ body {
   color: #fff;
 }
 
+.leaf-message {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
 .restart-btn {
   display: inline-block;
-  margin-top: 1.5rem;
-  padding: 0.75rem 2rem;
+  margin-top: 0.5rem;
+  padding: 0.65rem 1.75rem;
   background: var(--accent);
   color: #fff;
   border: none;
   border-radius: 12px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -165,24 +334,13 @@ body {
   background: var(--accent-hover);
 }
 
-.back-btn {
-  display: inline-block;
-  margin-top: 1rem;
-  padding: 0.4rem 0;
-  background: none;
-  border: none;
-  color: var(--muted);
-  font-size: 0.875rem;
-  cursor: pointer;
-}
-
-.back-btn:hover {
-  color: var(--fg);
-}
-
+/* ---- Error ---- */
 #error {
   text-align: center;
   padding: 2rem;
+  max-width: 500px;
+  margin: auto;
+  margin-top: 4rem;
 }
 
 #error h2 {
@@ -190,12 +348,24 @@ body {
   color: #ef4444;
 }
 
+/* ---- Scrollbar styling ---- */
+#tree-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+#tree-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+#tree-wrapper::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
 @media (max-width: 480px) {
-  #card {
-    padding: 1.5rem 1.25rem;
-    border-radius: 12px;
+  .center-panel-header h2 {
+    font-size: 1.15rem;
   }
-  #card h2 {
-    font-size: 1.25rem;
+  #center-panel {
+    padding: 1.5rem 1.25rem;
   }
 }
