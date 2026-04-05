@@ -164,12 +164,29 @@
     }
   });
 
+  // --- Intro ---
+  function showIntro(introText, onStart) {
+    const card = document.getElementById('card');
+    card.innerHTML = `
+      <div class="intro-body">
+        <h2>저자의 생각</h2>
+        <div class="body-text">${markdownToHtml(introText)}</div>
+        <button class="choice-btn start-btn" id="start-btn">시작하기</button>
+      </div>
+    `;
+    card.classList.remove('fade-out');
+    document.getElementById('start-btn').addEventListener('click', onStart);
+  }
+
   // --- Init ---
   async function init() {
     try {
-      const res = await fetch('README.md');
-      if (!res.ok) throw new Error(`README.md 로드 실패 (${res.status})`);
-      const raw = await res.text();
+      const [treeRes, introRes] = await Promise.all([
+        fetch('README.md'),
+        fetch('data/intro.md')
+      ]);
+      if (!treeRes.ok) throw new Error(`README.md 로드 실패 (${treeRes.status})`);
+      const raw = await treeRes.text();
       const parsed = parse(raw);
       tree = parsed.nodes;
       meta = parsed.meta;
@@ -177,7 +194,15 @@
 
       const hashId = window.location.hash.slice(1);
       const startId = (hashId && tree.has(hashId)) ? hashId : meta.start;
-      navigate(startId);
+
+      if (introRes.ok && !hashId) {
+        const introRaw = await introRes.text();
+        // Strip markdown heading (# ...) from intro text
+        const introText = introRaw.replace(/^#[^\n]*\n+/, '').trim();
+        showIntro(introText, () => navigate(startId));
+      } else {
+        navigate(startId);
+      }
     } catch (err) {
       showError(`${err.message}<br><br><button class="restart-btn" onclick="location.reload()">다시 시도</button>`, false);
     }
