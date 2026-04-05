@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 260" width="640" height="260" font-family="'Pretendard', 'Apple SD Gothic Neo', sans-serif">
+
+  <rect width="640" height="260" fill="#0f0f0f" rx="14"/>
+
+  <!-- 코딩 — 가장 큰 원 (r=100) -->
+  <circle cx="140" cy="130" r="100" fill="#4f8ef7" opacity="0.12"/>
+  <circle cx="140" cy="130" r="100" fill="none" stroke="#4f8ef7" stroke-width="2"/>
+  <text x="140" y="130" dominant-baseline="middle" text-anchor="middle" fill="#4f8ef7" font-size="18" font-weight="700">코딩</text>
+
+  <!-- 환경 설정 — 중간 원 (r=68) -->
+  <circle cx="348" cy="130" r="68" fill="#a78bfa" opacity="0.10"/>
+  <circle cx="348" cy="130" r="68" fill="none" stroke="#a78bfa" stroke-width="1.8"/>
+  <text x="348" y="130" dominant-baseline="middle" text-anchor="middle" fill="#a78bfa" font-size="14" font-weight="600">환경 설정</text>
+
+  <!-- 프로젝트 관리 — 중간 원 (r=58) -->
+  <circle cx="518" cy="130" r="58" fill="#f472b6" opacity="0.10"/>
+  <circle cx="518" cy="130" r="58" fill="none" stroke="#f472b6" stroke-width="1.8"/>
+  <text x="518" y="130" dominant-baseline="middle" text-anchor="middle" fill="#f472b6" font-size="14" font-weight="600">프로젝트 관리</text>
+
+</svg>
